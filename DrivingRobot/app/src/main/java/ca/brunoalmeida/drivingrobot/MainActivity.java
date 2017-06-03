@@ -35,8 +35,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BLUETOOTH = 1;
     private static final int REQUEST_COARSE_LOCATION = 2;
 
-    BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     private boolean isBluetoothAvailable = false;
+
+    BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    private BluetoothSocket bluetoothSocket = null;
+    private OutputStream bluetoothOutputStream = null;
 
     TextView mainText;
 
@@ -57,8 +60,16 @@ public class MainActivity extends AppCompatActivity {
         debugAssert(false);
     }
 
+    private void showToast(String message, int length) {
+        Toast.makeText(this, message, length).show();
+    }
+
     private void showShortToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        showToast(message, Toast.LENGTH_SHORT);
+    }
+
+    private void showLongToast(String message) {
+        showToast(message, Toast.LENGTH_LONG);
     }
 
 
@@ -81,6 +92,17 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
 
         unregisterReceiver(bluetoothBroadcastReceiver);
+
+        // Close the Bluetooth socket
+        if (bluetoothSocket != null) {
+            try {
+                bluetoothSocket.close();
+                Log.v(TAG, "Closed Bluetooth socket");
+            } catch (IOException exception) {
+                Log.e(TAG, "Failed to close Bluetooth socket");
+                Log.e(TAG, exception.toString());
+            }
+        }
     }
 
     /**
@@ -97,35 +119,57 @@ public class MainActivity extends AppCompatActivity {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
                 Log.v(TAG, device.getName() + ", " + device.getAddress());
-                mainText.setText(
-                        "Found Bluetooth device:" +
-                                "\nName: " + device.getName() +
-                                "\nAddress: " + device.getAddress());
+
 
                 try {
-                    BluetoothSocket socket = device.createRfcommSocketToServiceRecord(MY_UUID);
+                    bluetoothSocket = device.createRfcommSocketToServiceRecord(MY_UUID);
                     Log.v(TAG, "Created Bluetooth socket");
 
                     bluetoothAdapter.cancelDiscovery();
                     Log.v(TAG, "Cancelled discovery");
 
-                    socket.connect();
+                    bluetoothSocket.connect();
                     Log.v(TAG, "Connected to Bluetooth socket");
 
-                    OutputStream outputStream = socket.getOutputStream();
-                    outputStream.write("hello world".getBytes());
-                    Log.v(TAG, "Wrote to output stream");
+                    bluetoothOutputStream = bluetoothSocket.getOutputStream();
+                    Log.v(TAG, "Obtained Bluetooth output stream");
 
-                    socket.close();
-                    Log.v(TAG, "Closed Bluetooth socket");
+
+                    mainText.setText(
+                            "Connected to device:" +
+                            "\nName: " + device.getName() +
+                            "\nAddress: " + device.getAddress());
+
+                    // try
+                    writeToBluetooth("Hello World!");
+
+
 
                 } catch (IOException exception) {
-                    Log.e(TAG, "Failed to use Bluetooth socket");
+                    Log.e(TAG, "Failed to connect to Bluetooth device");
                     Log.e(TAG, exception.toString());
+
+                    mainText.setText("Failed to connect. Try restarting the Arduino.");
                 }
             }
         }
     };
+
+    private void writeToBluetooth(String message) {
+        if (bluetoothOutputStream != null) {
+            try {
+                bluetoothOutputStream.write(message.getBytes());
+                Log.v(TAG, "Wrote to Bluetooth output stream: " + message);
+
+            } catch (IOException exception) {
+                Log.e(TAG, "Failed to write to Bluetooth output stream");
+                Log.e(TAG, exception.toString());
+            }
+
+        } else {
+            Log.e(TAG, "Bluetooth output stream unavailable");
+        }
+    }
 
     /**
      * Registers {@link #bluetoothBroadcastReceiver} for Bluetooth-related broadcasts.
@@ -175,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
 
         } else {
             Log.e(TAG, "Bluetooth hardware unavailable");
-            showShortToast("This device does not have Bluetooth hardware");
+            mainText.setText("This device does not have Bluetooth hardware.");
         }
     }
 
@@ -250,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
         if (isBluetoothAvailable) {
             startBluetoothDiscovery();
         } else {
-            showShortToast("Bluetooth not available");
+            mainText.setText("Bluetooth is not available.");
             checkBluetoothAvailability();
         }
     }
