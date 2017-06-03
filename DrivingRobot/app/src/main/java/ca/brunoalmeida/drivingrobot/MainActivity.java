@@ -8,12 +8,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.Build;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.TextView;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -22,60 +23,46 @@ public class MainActivity extends AppCompatActivity {
     private static final int ENABLE_BLUETOOTH_REQUEST = 1;
     private static final int REQUEST_COARSE_LOCATION = 2;
 
-    BluetoothAdapter bluetoothAdapter;
+    BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+    /**
+     * Receives Bluetooth action broadcasts.
+     */
+    BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.v(TAG, "BroadcastReceiver.onReceive()");
+
+            Log.v(TAG, intent.toString());
+
+            if (intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) {
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                Log.v(TAG, device.getName() + ", " + device.getAddress());
+                mainText.setText("Found Bluetooth device:" + "\nName: " + device.getName() + "\nAddress: " + device.getAddress());
+            }
+        }
+    };
 
 
+    TextView mainText;
 
-    private static void debugAssert(boolean result) {
-        if (BuildConfig.DEBUG && !result) {
+
+    /**
+     * In debug mode, asserts that the expression is true.
+     * @param expression Expected to be true
+     */
+    private static void debugAssert(boolean expression) {
+        if (BuildConfig.DEBUG && !expression) {
             throw new AssertionError();
         }
     }
 
+    /**
+     * Asserts a failure.
+     */
     private static void debugAssertFail() {
         debugAssert(false);
     }
-
-
-
-
-
-
-    protected void checkLocationPermission() {
-        Log.v(TAG, "checkLocationPermission()");
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                    REQUEST_COARSE_LOCATION);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-        Log.v(TAG, "onRequestPermissionsResult()");
-
-        switch (requestCode) {
-            case REQUEST_COARSE_LOCATION: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    //proceedDiscovery(); // --->
-                    Log.v(TAG, "Success");
-                } else {
-                    //TODO re-request
-                    Log.v(TAG, "Fail");
-                }
-                break;
-            }
-        }
-    }
-
-
-
-
 
 
     @Override
@@ -84,28 +71,80 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
 
-        checkLocationPermission();
-
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-//            bluetoothAdapter = this.getSystemService(Context.BLUETOOTH_SERVICE);
-//        }
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
         setContentView(R.layout.activity_main);
 
+        mainText = (TextView) findViewById(R.id.main_text);
+        mainText.setText("DrivingRobot");
 
+        // Check permission
+        checkCoarseLocationPermission();
+
+        // Register receiver for Bluetooth broadcasts
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        registerReceiver(broadcastReceiver, filter);
+
+        // Check if Bluetooth is available and enabled
         if (bluetoothAdapter != null) {
             if (bluetoothAdapter.isEnabled()) {
-                bluetoothStuff();
+                // Available and enabled
+                startBluetooth();
             } else {
+                // Available but not enabled
+                // Request the user to turn on Bluetooth
                 Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(intent, ENABLE_BLUETOOTH_REQUEST);
             }
         } else {
-            Log.e(TAG, "Bluetooth not available");
+            Log.e(TAG, "Bluetooth unavailable");
         }
     }
 
+    /**
+     * Checks if the app has the coarse location permission, and asks the user if it does not.
+     */
+    protected void checkCoarseLocationPermission() {
+        Log.v(TAG, "checkCoarseLocationPermission()");
+
+        // If the permission is not granted, request it
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[] { Manifest.permission.ACCESS_COARSE_LOCATION },
+                    REQUEST_COARSE_LOCATION);
+        }
+    }
+
+    // Coarse location permission request callback
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+        Log.v(TAG, "onRequestPermissionsResult()");
+
+        switch (requestCode) {
+            case REQUEST_COARSE_LOCATION: {
+
+                // If the permission was granted
+                if (grantResults.length > 0 &&
+                        grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startBluetooth();
+                    Log.v(TAG, "Success");
+
+                } else {
+                    Log.v(TAG, "Fail");
+                }
+
+                break;
+            }
+        }
+    }
+
+    // Enable Bluetooth request callback
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.v(TAG, "onActivityResult()");
@@ -113,73 +152,30 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == ENABLE_BLUETOOTH_REQUEST) {
+            // If Bluetooth is enabled
             if (resultCode == RESULT_OK) {
-                bluetoothStuff();
+                startBluetooth();
             } else {
-                Log.e(TAG, "User declined to enable Bluetooth");
+                Log.v(TAG, "User declined to enable Bluetooth");
             }
         } else {
             debugAssertFail();
         }
     }
 
-    private void bluetoothStuff() {
-        Log.v(TAG, "bluetoothStuff()");
+    /**
+     * Starts the Bluetooth discovery process.
+     */
+    private void startBluetooth() {
+        Log.v(TAG, "startBluetooth()");
 
         if (bluetoothAdapter != null && bluetoothAdapter.isEnabled()) {
-//            BluetoothProfile profile = null;
-//            BluetoothProfile.ServiceListener listener = new BluetoothProfile.ServiceListener() {
-//                @Override
-//                public void onServiceConnected(int profile, BluetoothProfile proxy) {
-//                    Log.v(TAG, "onServiceConnected()");
-//                    Log.v(TAG, "profile = " + profile + "proxy = " + proxy);
-//                }
-//
-//                @Override
-//                public void onServiceDisconnected(int profile) {
-//                    Log.v(TAG, "onServiceDisconnected()");
-//                    Log.v(TAG, "profile = " + profile);
-//                }
-//            };
-//
-//            bluetoothAdapter.getProfileProxy(this, listener, BluetoothProfile.GATT);
-
-
-
-
-            BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    Log.v(TAG, "BroadcastReceiver.onReceive()");
-                    Log.v(TAG, context.toString());
-                    Log.v(TAG, intent.toString());
-
-                    if (intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) {
-                        BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                        Log.v(TAG, device.getName());
-                        Log.v(TAG, device.getAddress());
-                        Log.v(TAG, device.toString());
-                    }
-                }
-            };
-
-            IntentFilter filter = new IntentFilter();
-            filter.addAction(BluetoothDevice.ACTION_FOUND);
-            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
-            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-            registerReceiver(broadcastReceiver, filter);
-
-
-
-
-
-
-            Log.i(TAG, Boolean.toString(bluetoothAdapter.startDiscovery()));
-            //bluetoothAdapter.getRemoteDevice()
-
-
+            if (bluetoothAdapter.startDiscovery()) {
+                Log.v(TAG, "Starting Bluetooth discovery");
+            } else {
+                Log.v(TAG, "Failed to start Bluetooth discovery");
+            }
         } else {
-            // does it show it stops here?
             debugAssertFail();
         }
     }
@@ -190,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
 
         super.onDestroy();
 
-        //unregisterReceiver(broadcastReceiver);
+        unregisterReceiver(broadcastReceiver);
     }
+
 }
