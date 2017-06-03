@@ -16,6 +16,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private OutputStream bluetoothOutputStream = null;
 
     TextView mainText;
+    EditText message;
 
 
     /**
@@ -80,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         mainText = (TextView) findViewById(R.id.main_text);
+        message = (EditText) findViewById(R.id.message);
+
         mainText.setText("DrivingRobot");
 
         registerBluetoothBroadcastReceiver();
@@ -296,6 +300,15 @@ public class MainActivity extends AppCompatActivity {
         } else {
             mainText.setText("Bluetooth is not available.");
             checkBluetoothAvailability();
+        }
+    }
+
+    public void sendButtonTapped(View view) {
+        Log.v(TAG, "sendButtonTapped()");
+
+        if (message.getText().length() > 0) {
+            writeToBluetooth(message.getText().toString());
+            message.setText("");
         }
     }
 
