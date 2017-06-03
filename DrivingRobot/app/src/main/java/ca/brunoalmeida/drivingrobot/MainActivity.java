@@ -3,23 +3,29 @@ package ca.brunoalmeida.drivingrobot;
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
+
+import java.io.IOException;
+import java.util.UUID;
 
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
+    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+
     private static final int ENABLE_BLUETOOTH_REQUEST = 1;
     private static final int REQUEST_COARSE_LOCATION = 2;
 
@@ -37,8 +43,25 @@ public class MainActivity extends AppCompatActivity {
 
             if (intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+
                 Log.v(TAG, device.getName() + ", " + device.getAddress());
                 mainText.setText("Found Bluetooth device:" + "\nName: " + device.getName() + "\nAddress: " + device.getAddress());
+
+                try {
+                    BluetoothSocket socket = device.createRfcommSocketToServiceRecord(MY_UUID);
+                    Log.v(TAG, "Created Bluetooth socket");
+
+                    bluetoothAdapter.cancelDiscovery();
+                    socket.connect();
+                    Log.v(TAG, "Connected to Bluetooth socket");
+
+                    socket.close();
+                    Log.v(TAG, "Closed Bluetooth socket");
+
+                } catch (IOException exception) {
+                    Log.e(TAG, "Failed to use Bluetooth socket");
+                    Log.e(TAG, exception.toString());
+                }
             }
         }
     };
