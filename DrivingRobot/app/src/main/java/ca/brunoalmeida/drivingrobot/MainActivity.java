@@ -18,9 +18,13 @@ import android.util.Log;
 import android.widget.TextView;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.UUID;
 
 
+// TODO - make socket.connect() non-blocking on a background thread
+// TODO - use socket.getOutputStream().write() on a background thread, check on Arduino serial monitor
+// TODO - implement some sort of string terminating character, e.g. \0 or \n
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
@@ -54,6 +58,9 @@ public class MainActivity extends AppCompatActivity {
                     bluetoothAdapter.cancelDiscovery();
                     socket.connect();
                     Log.v(TAG, "Connected to Bluetooth socket");
+
+                    OutputStream outputStream = socket.getOutputStream();
+                    outputStream.write("hello world".getBytes());
 
                     socket.close();
                     Log.v(TAG, "Closed Bluetooth socket");
