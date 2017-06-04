@@ -162,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
     private void writeToBluetooth(String message) {
         if (bluetoothOutputStream != null) {
             try {
-                bluetoothOutputStream.write(message.getBytes());
+                bluetoothOutputStream.write((message + "\0").getBytes());
                 Log.v(TAG, "Wrote to Bluetooth output stream: " + message);
 
             } catch (IOException exception) {
