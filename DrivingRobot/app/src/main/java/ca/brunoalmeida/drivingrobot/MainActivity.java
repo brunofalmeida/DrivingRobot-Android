@@ -312,17 +312,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void leftForwardButtonTapped(View view) {
-        writeToBluetooth("LF");
+    public void stopButtonTapped(View view) {
+        writeToBluetooth("S");
     }
-    public void rightForwardButtonTapped(View view) {
-        writeToBluetooth("RF");
+    public void forwardButtonTapped(View view) {
+        writeToBluetooth("F");
     }
-    public void leftBackwardButtonTapped(View view) {
-        writeToBluetooth("LB");
+    public void backwardButtonTapped(View view) {
+        writeToBluetooth("B");
     }
-    public void rightBackwardButtonTapped(View view) {
-        writeToBluetooth("RB");
+    public void leftButtonTapped(View view) {
+        writeToBluetooth("L");
     }
+    public void rightButtonTapped(View view) {
+        writeToBluetooth("R");
+    }
+
 
 }

@@ -34,35 +34,55 @@
         android:text="Send"
         android:onClick="sendButtonTapped" />
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp">
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="LF"
-            android:onClick="leftForwardButtonTapped" />
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="RF"
-            android:onClick="rightForwardButtonTapped" />
-    </LinearLayout>
+
 
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="64dp"
+        android:layout_gravity="center_horizontal">
+
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="LB"
-            android:onClick="leftBackwardButtonTapped" />
-        <Button
+            android:text="Forward"
+            android:onClick="forwardButtonTapped"
+            android:layout_gravity="center_horizontal" />
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="RB"
-            android:onClick="rightBackwardButtonTapped" />
+            android:layout_marginTop="32dp">
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="32dp"
+                android:text="Left"
+                android:onClick="leftButtonTapped" />
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stop"
+                android:textColor="@android:color/white"
+                android:background="@android:color/holo_red_dark"
+                android:onClick="stopButtonTapped"/>
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="32dp"
+                android:text="Right"
+                android:onClick="rightButtonTapped" />
+        </LinearLayout>
+
+        <Button
+            android:layout_marginTop="32dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Backward"
+            android:onClick="backwardButtonTapped"
+            android:layout_gravity="center_horizontal" />
+
     </LinearLayout>
 
 </LinearLayout>
