@@ -34,4 +34,35 @@
         android:text="Send"
         android:onClick="sendButtonTapped" />
 
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp">
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="LF"
+            android:onClick="leftForwardButtonTapped" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="RF"
+            android:onClick="rightForwardButtonTapped" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="LB"
+            android:onClick="leftBackwardButtonTapped" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="RB"
+            android:onClick="rightBackwardButtonTapped" />
+    </LinearLayout>
+
 </LinearLayout>

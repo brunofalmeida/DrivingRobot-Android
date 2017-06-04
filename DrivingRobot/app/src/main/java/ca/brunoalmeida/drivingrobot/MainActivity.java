@@ -163,10 +163,10 @@ public class MainActivity extends AppCompatActivity {
         if (bluetoothOutputStream != null) {
             try {
                 bluetoothOutputStream.write((message + "\0").getBytes());
-                Log.v(TAG, "Wrote to Bluetooth output stream: " + message);
+                Log.v(TAG, "Wrote to Bluetooth output: " + message);
 
             } catch (IOException exception) {
-                Log.e(TAG, "Failed to write to Bluetooth output stream");
+                Log.e(TAG, "Failed to write to Bluetooth output");
                 Log.e(TAG, exception.toString());
             }
 
@@ -310,6 +310,19 @@ public class MainActivity extends AppCompatActivity {
             writeToBluetooth(message.getText().toString());
             message.setText("");
         }
+    }
+
+    public void leftForwardButtonTapped(View view) {
+        writeToBluetooth("LF");
+    }
+    public void rightForwardButtonTapped(View view) {
+        writeToBluetooth("RF");
+    }
+    public void leftBackwardButtonTapped(View view) {
+        writeToBluetooth("LB");
+    }
+    public void rightBackwardButtonTapped(View view) {
+        writeToBluetooth("RB");
     }
 
 }
