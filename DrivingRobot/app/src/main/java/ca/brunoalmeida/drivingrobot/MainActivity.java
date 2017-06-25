@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -24,10 +25,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.UUID;
 
-
-// TODO - make socket.connect() non-blocking on a background thread
-// TODO - use socket.getOutputStream().write() on a background thread, check on Arduino serial monitor
-// TODO - implement some sort of string terminating character, e.g. \0 or \n
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
@@ -36,9 +33,12 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BLUETOOTH = 1;
     private static final int REQUEST_COARSE_LOCATION = 2;
 
+    private static final String EXPECTED_BLUETOOTH_DEVICE_NAME = "HC-05";
+
     private boolean isBluetoothAvailable = false;
 
     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    BluetoothDevice hc05 = null;
     private BluetoothSocket bluetoothSocket = null;
     private OutputStream bluetoothOutputStream = null;
 
@@ -84,8 +84,6 @@ public class MainActivity extends AppCompatActivity {
         mainText = (TextView) findViewById(R.id.main_text);
         message = (EditText) findViewById(R.id.message);
 
-        mainText.setText("DrivingRobot");
-
         registerBluetoothBroadcastReceiver();
         checkBluetoothAvailability();
     }
@@ -120,56 +118,83 @@ public class MainActivity extends AppCompatActivity {
             Log.v(TAG, intent.toString());
 
             if (intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                final BluetoothDevice device = intent.getParcelableExtra(
+                        BluetoothDevice.EXTRA_DEVICE);
+                Log.v(TAG, "Device: " + device.getName() + ", " + device.getAddress());
 
-                Log.v(TAG, device.getName() + ", " + device.getAddress());
+                if (device.getName().equals(EXPECTED_BLUETOOTH_DEVICE_NAME)) {
+                    hc05 = device;
 
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                bluetoothSocket = hc05.createRfcommSocketToServiceRecord(MY_UUID);
+                                Log.v(TAG, "Created Bluetooth socket");
 
-                try {
-                    bluetoothSocket = device.createRfcommSocketToServiceRecord(MY_UUID);
-                    Log.v(TAG, "Created Bluetooth socket");
+                                bluetoothAdapter.cancelDiscovery();
+                                Log.v(TAG, "Cancelled discovery");
 
-                    bluetoothAdapter.cancelDiscovery();
-                    Log.v(TAG, "Cancelled discovery");
+                                bluetoothSocket.connect();
+                                Log.v(TAG, "Connected to Bluetooth socket");
 
-                    bluetoothSocket.connect();
-                    Log.v(TAG, "Connected to Bluetooth socket");
+                                bluetoothOutputStream = bluetoothSocket.getOutputStream();
+                                Log.v(TAG, "Obtained Bluetooth output stream");
 
-                    bluetoothOutputStream = bluetoothSocket.getOutputStream();
-                    Log.v(TAG, "Obtained Bluetooth output stream");
+                                writeToBluetooth("Hello World!");
 
+                            } catch (IOException exception) {
+                                Log.e(TAG, "Failed to connect to Bluetooth device");
+                                Log.e(TAG, exception.toString());
 
-                    mainText.setText(
-                            "Connected to device:" +
-                            "\nName: " + device.getName() +
-                            "\nAddress: " + device.getAddress());
-
-                    // try
-                    writeToBluetooth("Hello World!");
-
-
-
-                } catch (IOException exception) {
-                    Log.e(TAG, "Failed to connect to Bluetooth device");
-                    Log.e(TAG, exception.toString());
-
-                    mainText.setText("Failed to connect. Try restarting the Arduino.");
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        mainText.setText(
+                                                "Failed to connect. Try restarting the Arduino.");
+                                    }
+                                });
+                            }
+                        }
+                    });
                 }
+
+            } else if (intent.getAction().equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mainText.setText(
+                                "Connected to Arduino" +
+                                "\nName: " + hc05.getName() +
+                                "\nAddress: " + hc05.getAddress());
+                    }
+                });
+
+            } else if (intent.getAction().equals(BluetoothDevice.ACTION_ACL_DISCONNECTED)) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mainText.setText("Disconnected from Arduino");
+                    }
+                });
             }
         }
     };
 
-    private void writeToBluetooth(String message) {
+    private void writeToBluetooth(final String message) {
         if (bluetoothOutputStream != null) {
-            try {
-                bluetoothOutputStream.write((message + "\0").getBytes());
-                Log.v(TAG, "Wrote to Bluetooth output: " + message);
-
-            } catch (IOException exception) {
-                Log.e(TAG, "Failed to write to Bluetooth output");
-                Log.e(TAG, exception.toString());
-            }
-
+            AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        bluetoothOutputStream.write((message + "\0").getBytes());
+                        Log.v(TAG, "Wrote to Bluetooth output: " + message);
+                    } catch (IOException exception) {
+                        Log.e(TAG, "Failed to write to Bluetooth output");
+                        Log.e(TAG, exception.toString());
+                    }
+                }
+            });
         } else {
             Log.e(TAG, "Bluetooth output stream unavailable");
         }
@@ -183,6 +208,8 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(BluetoothDevice.ACTION_FOUND);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
+        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
         registerReceiver(bluetoothBroadcastReceiver, filter);
     }
 
