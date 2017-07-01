@@ -22,6 +22,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
 
@@ -35,12 +36,15 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String EXPECTED_BLUETOOTH_DEVICE_NAME = "HC-05";
 
+    private static final String bluetoothReadMessagePrefix = "BL: ";
+
     private boolean isBluetoothAvailable = false;
 
     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     BluetoothDevice hc05 = null;
     private BluetoothSocket bluetoothSocket = null;
     private OutputStream bluetoothOutputStream = null;
+    private InputStream bluetoothInputStream = null;
 
     TextView mainText;
     EditText message;
@@ -141,6 +145,11 @@ public class MainActivity extends AppCompatActivity {
                                 bluetoothOutputStream = bluetoothSocket.getOutputStream();
                                 Log.v(TAG, "Obtained Bluetooth output stream");
 
+                                bluetoothInputStream = bluetoothSocket.getInputStream();
+                                Log.v(TAG, "Obtained Bluetooth input stream");
+
+                                readFromBluetoothThread.start();
+
                                 writeToBluetooth("Hello World!");
 
                             } catch (IOException exception) {
@@ -181,6 +190,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+
     private void writeToBluetooth(final String message) {
         if (bluetoothOutputStream != null) {
             AsyncTask.execute(new Runnable() {
@@ -188,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     try {
                         bluetoothOutputStream.write((message + "\0").getBytes());
-                        Log.v(TAG, "Wrote to Bluetooth output: " + message);
+                        Log.v(TAG, "Bluetooth Write: " + message);
                     } catch (IOException exception) {
                         Log.e(TAG, "Failed to write to Bluetooth output");
                         Log.e(TAG, exception.toString());
@@ -198,6 +208,37 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Log.e(TAG, "Bluetooth output stream unavailable");
         }
+    }
+
+
+    Thread readFromBluetoothThread = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    String message = "";
+                    byte[] b = new byte[1];
+
+                    while (b[0] != '\n') {
+                        bluetoothInputStream.read(b);
+                        if (b[0] != '\n') {
+                            message += (char) b[0];
+                        }
+                    }
+
+                    if (message.startsWith(bluetoothReadMessagePrefix)) {
+                        handleBluetoothRead(message.replaceFirst(bluetoothReadMessagePrefix, ""));
+                    }
+
+                } catch (IOException e) {
+                    Log.e(TAG, e.getMessage());
+                }
+            }
+        }
+    });
+
+    private void handleBluetoothRead(String message) {
+        Log.i(TAG, "Bluetooth Read: " + message);
     }
 
     /**
