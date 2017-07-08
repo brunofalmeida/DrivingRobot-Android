@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
     TextView mainText;
     EditText message;
+    TextView distance;
 
 
     /**
@@ -87,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         mainText = (TextView) findViewById(R.id.main_text);
         message = (EditText) findViewById(R.id.message);
+        distance = (TextView) findViewById(R.id.distance);
 
         registerBluetoothBroadcastReceiver();
         checkBluetoothAvailability();
@@ -237,8 +239,14 @@ public class MainActivity extends AppCompatActivity {
         }
     });
 
-    private void handleBluetoothRead(String message) {
+    private void handleBluetoothRead(final String message) {
         Log.i(TAG, "Bluetooth Read: " + message);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                distance.setText("Distance: " + message + "cm");
+            }
+        });
     }
 
     /**
