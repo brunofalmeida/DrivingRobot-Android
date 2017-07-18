@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:layout_margin="16dp"
+    android:orientation="vertical"
     tools:context="ca.brunoalmeida.drivingrobot.MainActivity">
 
     <LinearLayout
@@ -16,17 +16,17 @@
             android:id="@+id/main_text"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
             android:layout_weight="1"
-            android:text="Not connected"
-            android:layout_gravity="center_vertical"/>
+            android:text="Not connected" />
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="16dp"
             android:layout_gravity="center_vertical"
-            android:text="Connect"
-            android:onClick="connectButtonTapped" />
+            android:layout_marginLeft="16dp"
+            android:onClick="connectButtonTapped"
+            android:text="Connect" />
 
     </LinearLayout>
 
@@ -35,99 +35,104 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="32dp"
-        android:textSize="18dp"
-        android:text="Forward Distance" />
+        android:text="Forward Distance"
+        android:textSize="18dp" />
 
     <TextView
         android:id="@+id/distance"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:textSize="24dp"
         android:text="Unknown"
-        android:textColor="@android:color/black" />
+        android:textColor="@android:color/black"
+        android:textSize="24dp" />
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:layout_gravity="center_horizontal"
         android:layout_marginTop="32dp"
-        android:layout_gravity="center_horizontal">
+        android:orientation="vertical">
 
         <ImageButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/arrow_without_stem"
-            android:background="@android:color/transparent"
             android:layout_gravity="center_horizontal"
-            android:tint="@android:color/darker_gray"
-            android:layout_marginBottom="-10dp"/>
+            android:layout_marginBottom="-10dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/arrow_without_stem"
+            android:tint="@android:color/darker_gray" />
 
         <Button
             android:layout_width="100dp"
             android:layout_height="wrap_content"
-            android:text="Forward"
+            android:layout_gravity="center_horizontal"
             android:onClick="forwardButtonTapped"
-            android:layout_gravity="center_horizontal" />
+            android:text="Forward" />
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp">
+
             <ImageButton
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/arrow_without_stem"
-                android:background="@android:color/transparent"
                 android:layout_marginRight="-10dp"
-                android:tint="@android:color/darker_gray"
-                android:rotation="-90"/>
+                android:background="@android:color/transparent"
+                android:rotation="-90"
+                android:src="@drawable/arrow_without_stem"
+                android:tint="@android:color/darker_gray" />
+
             <Button
                 android:layout_width="80dp"
                 android:layout_height="wrap_content"
-                android:text="Left"
-                android:onClick="leftButtonTapped" />
+                android:onClick="leftButtonTapped"
+                android:text="Left" />
+
             <Button
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
-                android:text="Stop"
                 android:layout_marginLeft="16dp"
                 android:layout_marginRight="16dp"
-                android:textColor="@android:color/white"
                 android:background="@android:color/holo_red_dark"
-                android:onClick="stopButtonTapped"/>
+                android:onClick="stopButtonTapped"
+                android:text="Stop"
+                android:textColor="@android:color/white" />
+
             <Button
                 android:layout_width="80dp"
                 android:layout_height="wrap_content"
-                android:text="Right"
-                android:onClick="rightButtonTapped" />
+                android:onClick="rightButtonTapped"
+                android:text="Right" />
+
             <ImageButton
-                android:layout_marginLeft="-10dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/arrow_without_stem"
+                android:layout_marginLeft="-10dp"
                 android:background="@android:color/transparent"
-                android:tint="@android:color/darker_gray"
-                android:rotation="90"/>
+                android:rotation="90"
+                android:src="@drawable/arrow_without_stem"
+                android:tint="@android:color/darker_gray" />
         </LinearLayout>
 
         <Button
-            android:layout_marginTop="32dp"
             android:layout_width="100dp"
             android:layout_height="wrap_content"
-            android:text="Backward"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="32dp"
             android:onClick="backwardButtonTapped"
-            android:layout_gravity="center_horizontal" />
+            android:text="Backward" />
 
         <ImageButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/arrow_without_stem"
-            android:background="@android:color/transparent"
-            android:layout_marginTop="-10dp"
             android:layout_gravity="center_horizontal"
-            android:tint="@android:color/darker_gray"
-            android:rotation="180"/>
+            android:layout_marginTop="-10dp"
+            android:background="@android:color/transparent"
+            android:rotation="180"
+            android:src="@drawable/arrow_without_stem"
+            android:tint="@android:color/darker_gray" />
 
     </LinearLayout>
 
