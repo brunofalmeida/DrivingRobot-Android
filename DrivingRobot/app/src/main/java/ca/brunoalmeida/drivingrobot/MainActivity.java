@@ -17,7 +17,6 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -47,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
     private InputStream bluetoothInputStream = null;
 
     TextView mainText;
-    EditText message;
     TextView distance;
 
 
@@ -87,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         mainText = (TextView) findViewById(R.id.main_text);
-        message = (EditText) findViewById(R.id.message);
         distance = (TextView) findViewById(R.id.distance);
 
         registerBluetoothBroadcastReceiver();
@@ -244,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                distance.setText("Distance: " + message + "cm");
+                distance.setText(message + "cm");
             }
         });
     }
@@ -379,14 +376,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void sendButtonTapped(View view) {
-        Log.v(TAG, "sendButtonTapped()");
-
-        if (message.getText().length() > 0) {
-            writeToBluetooth(message.getText().toString());
-            message.setText("");
-        }
-    }
 
     public void stopButtonTapped(View view) {
         writeToBluetooth("S");
