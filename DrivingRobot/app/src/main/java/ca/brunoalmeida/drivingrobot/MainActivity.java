@@ -28,15 +28,24 @@ import java.util.UUID;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
+
+    /** The default UUID for communicating with the Bluetooth module. */
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
+    // For requesting permissions
     private static final int REQUEST_ENABLE_BLUETOOTH = 1;
     private static final int REQUEST_COARSE_LOCATION = 2;
 
+    /** The name of the Bluetooth module. */
     private static final String EXPECTED_BLUETOOTH_DEVICE_NAME = "HC-05";
 
+    /**
+     * The prefix used for received Bluetooth messages intended for this Android device.
+     * This is used to disregard the other messages Arduino sends to serial output for logging purposes.
+     */
     private static final String bluetoothReadMessagePrefix = "BL: ";
 
+    /** Whether Bluetooth is set up and ready to communicate. */
     private boolean isBluetoothAvailable = false;
 
     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -45,12 +54,13 @@ public class MainActivity extends AppCompatActivity {
     private OutputStream bluetoothOutputStream = null;
     private InputStream bluetoothInputStream = null;
 
+    // Interface elements
     TextView mainText;
     TextView distance;
 
 
     /**
-     * In debug mode, asserts that the expression is true.
+     * If in debug mode, asserts that the expression is true.
      */
     private static void debugAssert(boolean expression) {
         if (BuildConfig.DEBUG && !expression) {
@@ -84,10 +94,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+
+        // Get interface elements
         mainText = (TextView) findViewById(R.id.main_text);
         distance = (TextView) findViewById(R.id.distance);
 
+        // Register for Bluetooth-related broadcasts
         registerBluetoothBroadcastReceiver();
+
+        // Set up Bluetooth
         checkBluetoothAvailability();
     }
 
@@ -96,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
         Log.v(TAG, "onDestroy()");
         super.onDestroy();
 
+        // Unregister from Bluetooth-related broadcasts
         unregisterReceiver(bluetoothBroadcastReceiver);
 
         // Close the Bluetooth socket
@@ -111,6 +127,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * Registers {@link #bluetoothBroadcastReceiver} for Bluetooth-related broadcasts.
+     */
+    private void registerBluetoothBroadcastReceiver() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
+        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
+        registerReceiver(bluetoothBroadcastReceiver, filter);
+    }
+
+    /**
      * Receives Bluetooth-related broadcasts.
      */
     BroadcastReceiver bluetoothBroadcastReceiver = new BroadcastReceiver() {
@@ -120,14 +149,19 @@ public class MainActivity extends AppCompatActivity {
 
             Log.v(TAG, intent.toString());
 
+            // If a Bluetooth device has been found
             if (intent.getAction().equals(BluetoothDevice.ACTION_FOUND)) {
+
+                // Get the device information
                 final BluetoothDevice device = intent.getParcelableExtra(
                         BluetoothDevice.EXTRA_DEVICE);
                 Log.v(TAG, "Device: " + device.getName() + ", " + device.getAddress());
 
+                // If the device is the Bluetooth module we are searching for
                 if (device.getName().equals(EXPECTED_BLUETOOTH_DEVICE_NAME)) {
                     hc05 = device;
 
+                    // Establish the Bluetooth connections and input/output streams
                     AsyncTask.execute(new Runnable() {
                         @Override
                         public void run() {
@@ -147,9 +181,11 @@ public class MainActivity extends AppCompatActivity {
                                 bluetoothInputStream = bluetoothSocket.getInputStream();
                                 Log.v(TAG, "Obtained Bluetooth input stream");
 
+                                // Start receiving thread for input stream
                                 readFromBluetoothThread.start();
 
-                                writeToBluetooth("Hello World!");
+                                // Write a test message to the output stream
+                                writeToBluetooth("Hello World from Android!");
 
                             } catch (IOException exception) {
                                 Log.e(TAG, "Failed to connect to Bluetooth device");
@@ -167,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
                     });
                 }
 
+            // If successfully connected to a Bluetooth device
             } else if (intent.getAction().equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
                 runOnUiThread(new Runnable() {
                     @Override
@@ -178,6 +215,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
+            // If disconnected from a Bluetooth device
             } else if (intent.getAction().equals(BluetoothDevice.ACTION_ACL_DISCONNECTED)) {
                 runOnUiThread(new Runnable() {
                     @Override
@@ -190,12 +228,15 @@ public class MainActivity extends AppCompatActivity {
     };
 
 
+    /** Writes a message to the Bluetooth output stream. */
     private void writeToBluetooth(final String message) {
         if (bluetoothOutputStream != null) {
             AsyncTask.execute(new Runnable() {
                 @Override
                 public void run() {
                     try {
+                        // Arduino will receive the message one character at a time,
+                        // so add the "\0" delimiter to indicate the end of the message
                         bluetoothOutputStream.write((message + "\0").getBytes());
                         Log.v(TAG, "Bluetooth Write: " + message);
                     } catch (IOException exception) {
@@ -210,14 +251,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    /** A thread that runs forever to receive Bluetooth messages from the input stream. */
     Thread readFromBluetoothThread = new Thread(new Runnable() {
         @Override
         public void run() {
             while (true) {
                 try {
+                    // The complete message
                     String message = "";
+
+                    // Message buffer
                     byte[] b = new byte[1];
 
+                    // Read bytes until the end of the message (newline character)
                     while (b[0] != '\n') {
                         bluetoothInputStream.read(b);
                         if (b[0] != '\n') {
@@ -225,6 +271,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
 
+                    // If the message is intended for this device, handle it (removing the prefix)
                     if (message.startsWith(bluetoothReadMessagePrefix)) {
                         handleBluetoothRead(message.replaceFirst(bluetoothReadMessagePrefix, ""));
                     }
@@ -236,6 +283,9 @@ public class MainActivity extends AppCompatActivity {
         }
     });
 
+    /** Handles a received Bluetooth message and performs the appropriate action.
+     * Currently, the application only reads distance measurements from Bluetooth input.
+     */
     private void handleBluetoothRead(final String message) {
         Log.i(TAG, "Bluetooth Read: " + message);
         runOnUiThread(new Runnable() {
@@ -244,19 +294,6 @@ public class MainActivity extends AppCompatActivity {
                 distance.setText(message + "cm");
             }
         });
-    }
-
-    /**
-     * Registers {@link #bluetoothBroadcastReceiver} for Bluetooth-related broadcasts.
-     */
-    private void registerBluetoothBroadcastReceiver() {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothDevice.ACTION_FOUND);
-        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
-        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-        filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
-        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
-        registerReceiver(bluetoothBroadcastReceiver, filter);
     }
 
     /**
@@ -302,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    // Enable Bluetooth request callback
+    // Handles the enable Bluetooth request callback
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.v(TAG, "onActivityResult()");
@@ -321,7 +358,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    // Coarse location permission request callback
+    // Handles the coarse location permission request callback
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String permissions[],
@@ -365,6 +402,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    /** "Connect" button event handler */
     public void connectButtonTapped(View view) {
         Log.v(TAG, "connectButtonTapped()");
 
@@ -377,6 +415,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    // Directional control event handlers
     public void stopButtonTapped(View view) {
         writeToBluetooth("S");
     }
