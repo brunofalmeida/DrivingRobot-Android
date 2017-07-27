@@ -1,2 +1,5 @@
-# DrivingRobot-Android
-An Android application for Bluetooth control of a driving robot.
+# Driving Robot - Android
+
+The Android application software component of the Driving Robot project.
+
+Main Repository: https://github.com/brunofalmeida/DrivingRobot
